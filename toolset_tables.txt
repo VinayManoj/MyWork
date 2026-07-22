@@ -1,0 +1,737 @@
+*&---------------------------------------------------------------------*
+*& Modulpool ZTEST_TOOLSET
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+PROGRAM zmm_pms_toolset.
+
+DATA: Field_id1 TYPE vrm_id,
+      gv_drop   TYPE VRM_id,
+      GV_digi   TYPE vrm_id,
+      gv_esc    TYPE vrm_id,
+      gv_conf   TYPE vrm_id,
+      gv_cont   TYPE vrm_id,
+      gv_obso   TYPE vrm_id,
+      gv_trea   TYPE vrm_id,
+      list      TYPE vrm_values,
+      value     LIKE LINE OF list.
+Data: gt_tab type table of ZMM_PMS_ZTABLES.
+
+DATA:
+  ok_code TYPE sy-ucomm,
+  save_ok TYPE sy-ucomm.
+
+Refresh gt_tab[].
+
+PERFORM data_for_dropdown.
+
+CALL SCREEN 1000.
+
+
+*&---------------------------------------------------------------------*
+*& Module STATUS_1000 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_1000 OUTPUT.
+  SET PF-STATUS 'ZTESTTOOL'.
+  SET TITLEBAR '1000'.
+ENDMODULE.
+
+
+
+MODULE user_command_1000 INPUT.
+
+  CASE sy-ucomm.
+    WHEN 'EXIT'.
+      SET SCREEN 0.
+      LEAVE SCREEN.
+    WHEN 'BACK'.
+      SET SCREEN 0.
+      LEAVE SCREEN.
+    WHEN 'Z_ESCL'.
+*      CALL TRANSACTION
+
+      CALL FUNCTION 'VIEW_MAINTENANCE_CALL'
+        EXPORTING
+          action                       = 'U'
+          view_name                    = 'ZMFOR_MATRICS'
+          "maint.View
+        EXCEPTIONS
+          client_reference             = 1
+          foreign_lock                 = 2
+          invalid_action               = 3
+          no_clientindependent_auth    = 4
+          no_database_function         = 5
+          no_editor_function           = 6
+          no_show_auth                 = 7
+          no_tvdir_entry               = 8
+          no_upd_auth                  = 9
+          only_show_allowed            = 10
+          system_failure               = 11
+          unknown_field_in_dba_sellist = 12
+          view_not_found               = 13
+          OTHERS                       = 14.
+      IF sy-subrc EQ 0.
+
+      ENDIF.
+    WHEN 'Z_DPD'.
+*      CALL TRANSACTION
+      CALL FUNCTION 'VIEW_MAINTENANCE_CALL'
+        EXPORTING
+          action                       = 'U'
+          view_name                    = 'ZMM_2J86_ROLES'
+          "maint.View
+        EXCEPTIONS
+          client_reference             = 1
+          foreign_lock                 = 2
+          invalid_action               = 3
+          no_clientindependent_auth    = 4
+          no_database_function         = 5
+          no_editor_function           = 6
+          no_show_auth                 = 7
+          no_tvdir_entry               = 8
+          no_upd_auth                  = 9
+          only_show_allowed            = 10
+          system_failure               = 11
+          unknown_field_in_dba_sellist = 12
+          view_not_found               = 13
+          OTHERS                       = 14.
+      IF sy-subrc EQ 0.
+
+      ENDIF.
+    WHEN 'Z_DROP'.
+
+*Read table list into data(ls_list) with key list-key = gv_drop.
+      IF list[] IS NOT INITIAL.
+      ENDIF.
+      IF sy-subrc IS INITIAL.
+      ENDIF.
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_DROPDOWN OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_dropdown OUTPUT.
+* SET PF-STATUS 'xxxxxxxx'.
+* SET TITLEBAR 'xxx'.
+
+  DATA lv_view TYPE dd02v-tabname.
+  CLEAR value.
+  REFRESH list[].
+
+
+if gt_tab[] is not initial.
+  Select distinct * from ZMM_PMS_ZTABLES into table gt_tab.
+endif.
+* ASML
+ Loop at gt_tab into data(ls_tab) where zgroup = 'ASML'.
+
+*  value-key  = 'ZMM_AMSL_DOWNPMT'.
+*  value-text =  'AMSL Payment  Contract'.
+  value-key  = ls_tab-Ztable.
+  value-text =  ls_tab-Zdescription.
+  APPEND value TO list.
+
+Endloop.
+
+  CALL FUNCTION 'VRM_SET_VALUES'
+    EXPORTING
+      id     = 'GV_DROP'
+      values = list.
+
+  IF sy-ucomm = 'Z_DROP'.
+
+    READ TABLE list INTO DATA(ls_list) WITH KEY key = gv_drop.
+    IF ls_list-key IS NOT INITIAL.
+      lv_view = ls_list-key.
+      CALL FUNCTION 'VIEW_MAINTENANCE_CALL'
+        EXPORTING
+          action                       = 'U'
+          view_name                    = lv_view
+          "maint.View
+        EXCEPTIONS
+          client_reference             = 1
+          foreign_lock                 = 2
+          invalid_action               = 3
+          no_clientindependent_auth    = 4
+          no_database_function         = 5
+          no_editor_function           = 6
+          no_show_auth                 = 7
+          no_tvdir_entry               = 8
+          no_upd_auth                  = 9
+          only_show_allowed            = 10
+          system_failure               = 11
+          unknown_field_in_dba_sellist = 12
+          view_not_found               = 13
+          OTHERS                       = 14.
+      IF sy-subrc EQ 0.
+
+      ENDIF.
+    ENDIF.
+  ENDIF.
+  REFRESH list[].
+
+*Digital propulsion
+  CLEAR value.
+  REFRESH list[].
+  value-key  = 'ZMM_2J86_ROLES'.
+  value-text =  'Digital Propulsion Demand: Action authorized'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_DIGI_DATA'.
+  value-text =  'Digital Propulsion Data'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_DIGI_ESCA'.
+  value-text =  'Digital Propulsion - History of escalation data'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_DIGI_EXCLU'.
+  value-text =  'Digital Propulsion PO To Update'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_DIGI_PROP_AC'.
+  value-text =  'Digital Propulsion - List of AC type (serie)'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_DIGI_PROP_FV'.
+  value-text =  'Digital Propulsion default Selection Parameters'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_DIGI_PUR_VAL'.
+  value-text =  'Tiles and Purchasing group value'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_DIGI_STATUS'.
+  value-text =  'Digital Propulsion - Status Information for PO Card'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_DIGI_TEXT'.
+  value-text =  'Digital Propulsion - Header and item Text'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_DIGI_UPD'.
+  value-text =  'Digital Propulsion PO To Update'.
+  APPEND value TO list.
+
+  CALL FUNCTION 'VRM_SET_VALUES'
+    EXPORTING
+      id     = 'GV_DIGI'
+      values = list.
+
+  IF sy-ucomm = 'Z_DIGI'.
+    CLEAR lv_view.
+    READ TABLE list INTO DATA(ls_list1) WITH KEY key = gv_digi.
+    IF ls_list1-key IS NOT INITIAL.
+      lv_view = ls_list1-key.
+      CALL FUNCTION 'VIEW_MAINTENANCE_CALL'
+        EXPORTING
+          action                       = 'U'
+          view_name                    = lv_view
+          "maint.View
+        EXCEPTIONS
+          client_reference             = 1
+          foreign_lock                 = 2
+          invalid_action               = 3
+          no_clientindependent_auth    = 4
+          no_database_function         = 5
+          no_editor_function           = 6
+          no_show_auth                 = 7
+          no_tvdir_entry               = 8
+          no_upd_auth                  = 9
+          only_show_allowed            = 10
+          system_failure               = 11
+          unknown_field_in_dba_sellist = 12
+          view_not_found               = 13
+          OTHERS                       = 14.
+      IF sy-subrc EQ 0.
+
+      ENDIF.
+    ENDIF.
+  ENDIF.
+  REFRESH list[].
+
+*Escalation
+
+  CLEAR value.
+  REFRESH list[].
+  value-key  = 'ZMFOR_MATRICS'.
+  value-text =  'Escalation Data : Formulae Table for Matrics'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_ESC_MATRICS'.
+  value-text =  'Escalation Data for PPMS (Matrics )'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_ES_CAP_N'.
+  value-text =  'PPMS : Formula Escalation data for concession (CAP)'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_ES_CND_N'.
+  value-text =  'PPMS : Escalation data for concession (CAP)'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_ESC_COND'.
+  value-text =  'PPMS : Escalation conditions'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_METHOD'.
+  value-text =  'PPMS: Table with all escalation cap types (ZDSVET_METHOD)'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_SHARING'.
+  value-text =  'PPMS / Powerplant : sharing aggreement value from SCODA'.
+  APPEND value TO list.
+
+  value-key  = 'ZMSCREEN_MATRICS'.
+  value-text =  'MATRICS Data: Specific Revision Parameter'.
+  APPEND value TO list.
+
+  CALL FUNCTION 'VRM_SET_VALUES'
+    EXPORTING
+      id     = 'GV_ESC'
+      values = list.
+
+  IF sy-ucomm = 'Z_ESC'.
+    CLEAR lv_view.
+    READ TABLE list INTO DATA(ls_list2) WITH KEY key = gv_ESC.
+    IF ls_list2-key IS NOT INITIAL.
+      lv_view = ls_list2-key.
+      CALL FUNCTION 'VIEW_MAINTENANCE_CALL'
+        EXPORTING
+          action                       = 'U'
+          view_name                    = lv_view
+          "maint.View
+        EXCEPTIONS
+          client_reference             = 1
+          foreign_lock                 = 2
+          invalid_action               = 3
+          no_clientindependent_auth    = 4
+          no_database_function         = 5
+          no_editor_function           = 6
+          no_show_auth                 = 7
+          no_tvdir_entry               = 8
+          no_upd_auth                  = 9
+          only_show_allowed            = 10
+          system_failure               = 11
+          unknown_field_in_dba_sellist = 12
+          view_not_found               = 13
+          OTHERS                       = 14.
+      IF sy-subrc EQ 0.
+
+      ENDIF.
+    ENDIF.
+  ENDIF.
+  REFRESH list[].
+
+
+*CONF
+
+  CLEAR value.
+  REFRESH list[].
+  value-key  = 'ZMM_PMS_AC_CFG'.
+  value-text =  'PPMS interface : A/C engine configuration from ACMM & CAPA'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_AC_MOD'.
+  value-text =  'PPMS interface : A/C Mod/MP configuration from ACMM'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_AC_PPLA'.
+  value-text =  'PPMS interface : A/C allocation and dates from ACMM (APC)'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_ACCMAT'.
+  value-text =  'PPMS Config and Cross ref : ACC Engine Variant'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_ALL_DATA'.
+  value-text =  'PPMS interface : Data from CAPA test COM_DATA'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_CAC_FEE'.
+  value-text =  'PPMS : Cac with Fee amount'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_CAC_FLEX'.
+  value-text =  'PPMS : CAC with Flexibility (Ceo/Neo)'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_COLORS'.
+  value-text =  'Color specifications'.
+  APPEND value TO list.
+
+**
+  value-key  = 'ZMM_PMS_COVER_PO'.
+  value-text =  'PPMS : Powerplant PO items sent to vendors'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_CUST'.
+  value-text =  'Customer code conversion between SCODA and SAP'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_DEL_DATE'.
+  value-text =  'PPMS interface : Delivery date selection from APC and CAPA'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_ACCMAT'.
+  value-text =  'PPMS Config and Cross ref : ACC Engine Variant'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_DISPVAR'.
+  value-text =  'Display variant for Powerplant sales orders list (ZME1)'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_DOWNPMT'.
+  value-text =  'Products with downpayment'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_ESC_ROUN'.
+  value-text =  'Number of decimals by supplier on escalation coefficient'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_FLEXCOM'.
+  value-text =  'PPMS interface : Data from CAPA test COM_DATA'.
+  APPEND value TO list.
+**
+  value-key  = 'ZMM_PMS_IND_DATA'.
+  value-text =  'PPMS interface : Data from CAPA test IND_DATA'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_LT_DELAY'.
+  value-text =  'PPMS: New Leadtime customizing'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_LT_SETUP'.
+  value-text =  'PPMS interface : border lead time'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_MOD_MP'.
+  value-text =  'PPMS interface : List of MP/Mods applicable to the A/C'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_NEAR_LT'.
+  value-text =  'PPMS : Table for PO entering leadtime recording'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_OFFSET'.
+  value-text =  'PPMS : Offset to calculate engine delivery date'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_PMT_SCHD'.
+  value-text =  'Payment schedule by  Supplier /Material/ Partner (NMER,BP)'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_SCODA'.
+  value-text =  'Scoda interface :  firm orders'.
+  APPEND value TO list.
+
+**
+  value-key  = 'ZMM_PMS_SCODA_CH'.
+  value-text =  'PPMS : Scoda changes log'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_SUPPLIER'.
+  value-text =  'table de transcodification des fournisseurs'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_SWITCH'.
+  value-text =  'PPMS SWITCH Auto-release PREQ'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_TI_MAT'.
+  value-text =  'PPMS : Tech Insertion material cross-ref'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_TRAFIC'.
+  value-text =  'PPMS BC: Used for trafic'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_URL'.
+  value-text =  'PPMS-MATRICS: List of Matrics web services'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_VARKONDM'.
+  value-text =  'Material pricing type excluded from display variant (ZME1)'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PO_EMAILPRIN'.
+  value-text =  'Email configuration  table'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PO_REL_PRIOR'.
+  value-text =  'Priority of change in PO'.
+  APPEND value TO list.
+**
+
+  CALL FUNCTION 'VRM_SET_VALUES'
+    EXPORTING
+      id     = 'GV_CONF'
+      values = list.
+
+  IF sy-ucomm = 'Z_CONF'.
+    CLEAR lv_view.
+    READ TABLE list INTO DATA(ls_list3) WITH KEY key = gv_conf.
+    IF ls_list3-key IS NOT INITIAL.
+      lv_view = ls_list3-key.
+      CALL FUNCTION 'VIEW_MAINTENANCE_CALL'
+        EXPORTING
+          action                       = 'U'
+          view_name                    = lv_view
+          "maint.View
+        EXCEPTIONS
+          client_reference             = 1
+          foreign_lock                 = 2
+          invalid_action               = 3
+          no_clientindependent_auth    = 4
+          no_database_function         = 5
+          no_editor_function           = 6
+          no_show_auth                 = 7
+          no_tvdir_entry               = 8
+          no_upd_auth                  = 9
+          only_show_allowed            = 10
+          system_failure               = 11
+          unknown_field_in_dba_sellist = 12
+          view_not_found               = 13
+          OTHERS                       = 14.
+      IF sy-subrc EQ 0.
+
+      ENDIF.
+    ENDIF.
+  ENDIF.
+  REFRESH list[].
+
+
+* Contribution
+
+
+  CLEAR value.
+  REFRESH list[].
+  value-key  = 'ZMM_PMS_CONTA'.
+  value-text =  'Contribution assignment'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_CONTH'.
+  value-text =  'Contribution Header information'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_CONTP'.
+  value-text =  'Contribution details'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_CONTR'.
+  value-text =  'PPMS Contribution reconsilation for SFAs'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_CONTR1'.
+  value-text =  'PPMS Contribution: Sales Order Data'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_CONTR2'.
+  value-text =  'PPMS Contribution: Sales Order Data 2'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_COUNT'.
+  value-text =  'Digital Propulsion Demand: Counter'.
+  APPEND value TO list.
+
+
+  CALL FUNCTION 'VRM_SET_VALUES'
+    EXPORTING
+      id     = 'GV_CONT'
+      values = list.
+
+  IF sy-ucomm = 'Z_CONT'.
+    CLEAR lv_view.
+    READ TABLE list INTO DATA(ls_list4) WITH KEY key = gv_cont.
+    IF ls_list4-key IS NOT INITIAL.
+      lv_view = ls_list4-key.
+      CALL FUNCTION 'VIEW_MAINTENANCE_CALL'
+        EXPORTING
+          action                       = 'U'
+          view_name                    = lv_view
+          "maint.View
+        EXCEPTIONS
+          client_reference             = 1
+          foreign_lock                 = 2
+          invalid_action               = 3
+          no_clientindependent_auth    = 4
+          no_database_function         = 5
+          no_editor_function           = 6
+          no_show_auth                 = 7
+          no_tvdir_entry               = 8
+          no_upd_auth                  = 9
+          only_show_allowed            = 10
+          system_failure               = 11
+          unknown_field_in_dba_sellist = 12
+          view_not_found               = 13
+          OTHERS                       = 14.
+      IF sy-subrc EQ 0.
+
+      ENDIF.
+    ENDIF.
+  ENDIF.
+  REFRESH list[].
+**
+*Obsolete
+
+  CLEAR value.
+  REFRESH list[].
+  value-key  = 'ZMM_PMS_CAC_PDAT'.
+  value-text =  'Special pricing date by CAC for migration PPMS'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_CONT_OLD'.
+  value-text =  'Contribution POPSY Old (details)'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_ERR_ACC'.
+  value-text =  'PPMS : PO items to be retreated by ACC'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_ESN_PSY'.
+  value-text =  'Powerplant P/O items POPSY with engine serial number for ACC'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_LTADF_EN  '.
+  value-text =  'Save LTADF data for other commitment (engine choice or not)'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_CONTR2'.
+  value-text =  'PPMS Contribution: Sales Order Data 2'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_LTADF_FL'.
+  value-text =  'Save LTADF data for Airframe flexibility'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_LTADF_PO'.
+  value-text =  'Save LTADF data for current P/O and Preq'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_PO_CAC'.
+  value-text =  'Cross reference between old and new P/O  item'.
+  APPEND value TO list.
+
+  CALL FUNCTION 'VRM_SET_VALUES'
+    EXPORTING
+      id     = 'GV_OBSO'
+      values = list.
+
+  IF sy-ucomm = 'Z_OBSO'.
+    CLEAR lv_view.
+    READ TABLE list INTO DATA(ls_list5) WITH KEY key = gv_obso.
+    IF ls_list5-key IS NOT INITIAL.
+      lv_view = ls_list5-key.
+      CALL FUNCTION 'VIEW_MAINTENANCE_CALL'
+        EXPORTING
+          action                       = 'U'
+          view_name                    = lv_view
+          "maint.View
+        EXCEPTIONS
+          client_reference             = 1
+          foreign_lock                 = 2
+          invalid_action               = 3
+          no_clientindependent_auth    = 4
+          no_database_function         = 5
+          no_editor_function           = 6
+          no_show_auth                 = 7
+          no_tvdir_entry               = 8
+          no_upd_auth                  = 9
+          only_show_allowed            = 10
+          system_failure               = 11
+          unknown_field_in_dba_sellist = 12
+          view_not_found               = 13
+          OTHERS                       = 14.
+      IF sy-subrc EQ 0.
+
+      ENDIF.
+    ENDIF.
+  ENDIF.
+  REFRESH list[].
+*Treasury
+  CLEAR value.
+  REFRESH list[].
+  value-key  = 'ZMM_PMS_TREA'.
+  value-text =  'Treausry simulation table'.
+  APPEND value TO list.
+
+  value-key  = 'ZMM_PMS_TREA_R'.
+  value-text =  'Treausry rules for printing'.
+  APPEND value TO list.
+
+  CALL FUNCTION 'VRM_SET_VALUES'
+    EXPORTING
+      id     = 'GV_TREA'
+      values = list.
+
+  IF sy-ucomm = 'Z_TREA'.
+    CLEAR lv_view.
+    READ TABLE list INTO DATA(ls_list6) WITH KEY key = gv_trea.
+    IF ls_list6-key IS NOT INITIAL.
+      lv_view = ls_list6-key.
+      CALL FUNCTION 'VIEW_MAINTENANCE_CALL'
+        EXPORTING
+          action                       = 'U'
+          view_name                    = lv_view
+          "maint.View
+        EXCEPTIONS
+          client_reference             = 1
+          foreign_lock                 = 2
+          invalid_action               = 3
+          no_clientindependent_auth    = 4
+          no_database_function         = 5
+          no_editor_function           = 6
+          no_show_auth                 = 7
+          no_tvdir_entry               = 8
+          no_upd_auth                  = 9
+          only_show_allowed            = 10
+          system_failure               = 11
+          unknown_field_in_dba_sellist = 12
+          view_not_found               = 13
+          OTHERS                       = 14.
+      IF sy-subrc EQ 0.
+
+      ENDIF.
+    ENDIF.
+  ENDIF.
+  REFRESH list[].
+
+  CLEAR:
+        gv_drop,
+        GV_digi,
+        gv_esc ,
+        gv_conf ,
+        gv_cont,
+        gv_obso ,
+        gv_trea .
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Form data_for_dropdown
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM data_for_dropdown .
+
+*Data:      list_digi  TYPE vrm_values,
+*      value_digi  LIKE LINE OF list.
+*
+*Data lv_view type DD02V-TABNAME.
+*
+*    value_digi-key  = '1'.
+*    value-text =  'ZMM_AMSL_DOWNPMT'.
+*    APPEND value TO list.
+*        value-key  = '2'.
+*    value-text =  'ZMM_AMSL_SCH_PO'.
+*    APPEND value TO list.
+
+
+
+ENDFORM.
