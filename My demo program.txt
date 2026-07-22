@@ -1,0 +1,1298 @@
+*&-------------------------------------------------------------------------*
+*& Report ZMM_PRPO_LEADTIME
+*&-------------------------------------------------------------------------*
+* PROGRAM      : ZMM_PRPO_LEADTIME                                         *
+* TITLE        : PR PO approval lead time                                  *
+* CREATE DATE  :                                                           *
+* AUTHOR       : VKANZCJO                                                  *
+* Project No.  :                                                           *
+*--------------------------------------------------------------------------*
+* DESCRIPTION  :To track the progress of release strategy step validations *
+*--------------------------------------------------------------------------*
+* CHANGE HISTORY                                                           *
+*--------------------------------------------------------------------------*
+*  DATE      | NAME     |  DESCRIPTION                    | Reference      *
+*&-------------------------------------------------------------------------*
+REPORT ZMM_PRPO_LEADTIME.
+
+Include ZMM_PRPO_LEADTIME_TOP.
+Include ZMM_PRPO_LEADTIME_SEL.
+Include ZMM_PRPO_LEADTIME_F01.
+
+START-OF-SELECTION.
+
+Perform Fetch_data.
+Perform Display_data.
+
+---------------------------
+
+*&---------------------------------------------------------------------*
+*& Include          ZMM_PRPO_LEADTIME_TOP
+*&---------------------------------------------------------------------*
+
+*Fields for AlV display for gt_char
+
+TYPES: BEGIN OF ty_final_data,
+         " --- PR Basic Data ---
+         banfn             TYPE eban-banfn,    " PR Number
+         bnfpo             TYPE eban-bnfpo,    " PR Item
+         pr_loekz          type eban-loekz,    " deletion indicator
+         knttp             TYPE eban-knttp,    " Account Assignment
+         txz01             TYPE eban-txz01,    " PR Short Text
+         werks             TYPE eban-werks,    " Plant Code
+         dispo             TYPE eban-dispo,    " MRP Controller
+         dsnam             TYPE t024d-dsnam,   " MRP Controller Name
+         kostl             TYPE ebkn-kostl,    " Cost Center
+         ekgrp             TYPE eban-ekgrp,    " Purchase Group
+         matkl             TYPE eban-matkl,    " Material Group
+         ernam             TYPE eban-ernam,    " PR Created By
+         pr_cre_name       TYPE adrp-name_text, " PR Created Name
+         badat             TYPE eban-badat,    " PR Request Date
+         lfdat             TYPE eban-lfdat,    " Delivery Date
+         lifnr             TYPE eban-lifnr,    " Desired Vendor Code
+         lifnr_pr_name     TYPE lfa1-name1,    " Desired Vendor Name
+         waers             TYPE eban-waers,    " Currency
+         menge             TYPE eban-menge,    " Qty Requested
+         preis             TYPE eban-preis,    " PR Valn Price
+         rlwrt_pr          TYPE eban-rlwrt,    " PR Total Value
+         statu             TYPE eban-statu,    " PR Status (Code)
+*        statu_txt        TYPE string,        " PR Status Description
+
+         " --- PR Release Information (1 to 6)
+         pr_rel_user1      TYPE cdhdr-username,
+         pr_rel_name1      TYPE adrp-name_text,
+         pr_rel_date1      TYPE cdhdr-udate,
+         pr_rel_time1      TYPE Char8,
+
+         pr_rel_user2      TYPE cdhdr-username,
+         pr_rel_name2      TYPE adrp-name_text,
+         pr_rel_date2      TYPE cdhdr-udate,
+         pr_rel_time2      TYPE Char8,
+
+         pr_rel_user3      TYPE cdhdr-username,
+         pr_rel_name3      TYPE adrp-name_text,
+         pr_rel_date3      TYPE cdhdr-udate,
+         pr_rel_time3      TYPE Char8,
+
+         pr_rel_user4      TYPE cdhdr-username,
+         pr_rel_name4      TYPE adrp-name_text,
+         pr_rel_date4      TYPE cdhdr-udate,
+         pr_rel_time4      TYPE Char8,
+
+         pr_rel_user5      TYPE cdhdr-username,
+         pr_rel_name5      TYPE adrp-name_text,
+         pr_rel_date5      TYPE cdhdr-udate,
+         pr_rel_time5      TYPE Char8,
+
+         pr_rel_user6      TYPE cdhdr-username,
+         pr_rel_name6      TYPE adrp-name_text,
+         pr_rel_date6      TYPE cdhdr-udate,
+         pr_rel_time6      TYPE Char8,
+
+         final_pr_rel_days TYPE string, "i,             " Final PR Release (in days)
+         pr_rel_days1      TYPE string, "i,
+         pr_rel_days2      TYPE string, "i,
+         pr_rel_days3      TYPE string, "i,
+         pr_rel_days4      TYPE string, "i,
+         pr_rel_days5      TYPE string, "i,
+         pr_rel_days6      TYPE string, "i,
+
+         " --- PO Basic Data ---
+         ebeln             TYPE ekpo-ebeln,    " PO Number
+         ebelp             TYPE ekpo-ebelp,    " PO Item
+         po_loekz          TYPE ekpo-loekz,    " PO Status (Line)
+         lifnr_po          TYPE ekko-lifnr,    " Supplier Code
+         lifnr_po_name     TYPE lfa1-name1,    " Supplier Name
+         txz01_po          TYPE ekpo-txz01,    " PO Short Text
+         waers_po          TYPE ekko-waers,    " PO Currency
+         menge_po          TYPE ekpo-menge,    " PO Quantity
+         netpr_po          TYPE ekpo-netpr,    " PO Net Price
+         netwr_po          TYPE ekpo-netwr,    " PO Order Value
+         rlwrt_po          TYPE ekko-rlwrt,    " Total PO Value
+         ernam_po          TYPE ekko-ernam,    " PO Created by
+         po_cre_name       TYPE adrp-name_text, " PO Creation Name
+         aedat_po          TYPE ekko-aedat,    " PO Creation Date
+
+         " --- PO Release Information ---
+         po_rel_user1      TYPE cdhdr-username,
+         po_rel_name1      TYPE adrp-name_text,
+         po_rel_date1      TYPE cdhdr-udate,
+         po_rel_time1      TYPE Char8,
+
+         po_rel_user2      TYPE cdhdr-username,
+         po_rel_name2      TYPE adrp-name_text,
+         po_rel_date2      TYPE cdhdr-udate,
+         po_rel_time2      TYPE Char8,
+
+         po_rel_user3      TYPE cdhdr-username,
+         po_rel_name3      TYPE adrp-name_text,
+         po_rel_date3      TYPE cdhdr-udate,
+         po_rel_time3      TYPE Char8,
+
+         po_rel_user4      TYPE cdhdr-username,
+         po_rel_name4      TYPE adrp-name_text,
+         po_rel_date4      TYPE cdhdr-udate,
+         po_rel_time4      TYPE Char8,
+
+         po_rel_user5      TYPE cdhdr-username,
+         po_rel_name5      TYPE adrp-name_text,
+         po_rel_date5      TYPE cdhdr-udate,
+         po_rel_time5      TYPE Char8,
+
+         multi_approval    TYPE char4,         " Multiple Approvals (Flag)
+
+         " --- PO Output/Sent Data ---
+         po_sent_date      TYPE nast-datvr,
+         po_sent_time      TYPE char8,
+
+         " --- Calculated Lead Times ---
+         pr_po_leadtime    TYPE  string,             " PR-PO Leadtime
+         po_approval_days  TYPE  string,             " PO approval (days)
+         po_creation_days  TYPE  string,             " PO creation (days)
+
+         po_rel_days1      TYPE  string,
+         po_rel_days2      TYPE  string,
+         po_rel_days3      TYPE  string,
+
+         po_rel_days4      TYPE string,
+         po_rel_days5      TYPE string,
+
+         po_sent_days      TYPE  string,             " PO sent (in days)
+       END OF ty_final_data.
+
+
+DATA : gs_final TYPE  ty_final_data,
+       gt_final TYPE TABLE OF ty_final_data.
+
+
+DATA:gr_alv       TYPE REF TO cl_salv_table,
+     gr_layout    TYPE REF TO cl_salv_layout , "cl_salv_table,
+     gv_key       TYPE salv_s_layout_key,
+     gr_table     TYPE REF TO cl_salv_table,
+     gr_functions TYPE REF TO cl_salv_functions_list,
+     gr_display   TYPE REF TO cl_salv_display_settings,
+     gr_columns   TYPE REF TO cl_salv_columns_table,
+     lr_column    TYPE REF TO cl_salv_column,
+     gr_column    TYPE REF TO cl_salv_column_table,
+     gr_sorts     TYPE REF TO cl_salv_sorts,
+     gr_agg       TYPE REF TO cl_salv_aggregations,
+     set_lay      TYPE slis_vari,
+     gv_counter   TYPE sy-tabix,
+     t_ss_exclude TYPE TABLE OF rsexfcode.
+
+TYPES: werks_ttab TYPE STANDARD TABLE OF werks_d WITH EMPTY KEY.
+
+CLASS lcl_event_handler DEFINITION.
+  PUBLIC SECTION.
+    METHODS:
+      on_link_click FOR EVENT link_click OF cl_salv_events_table
+        IMPORTING row column.
+ENDCLASS.
+
+CLASS lcl_event_handler IMPLEMENTATION.
+  METHOD on_link_click.
+    " Check if the clicked column is the PO Number
+    READ TABLE gt_final INTO DATA(ls_final) INDEX row.
+    IF sy-subrc <> 0.
+      RETURN.
+    ENDIF.
+
+    CASE column.
+      WHEN 'BANFN'. " Purchase Requisition Hotspot
+        IF ls_final-banfn IS NOT INITIAL.
+          SET PARAMETER ID 'BAN' FIELD ls_final-banfn.
+          SET PARAMETER ID 'BAP' FIELD ls_final-bnfpo.
+          CALL TRANSACTION 'ME53N' AND SKIP FIRST SCREEN.
+        ENDIF.
+
+      WHEN 'EBELN'. " Purchase Order Hotspot
+        IF ls_final-ebeln IS NOT INITIAL.
+          SET PARAMETER ID 'BES' FIELD ls_final-ebeln.
+          SET PARAMETER ID 'BSP' FIELD ls_final-ebelp.
+          CALL TRANSACTION 'ME23N' AND SKIP FIRST SCREEN.
+        ENDIF.
+    ENDCASE.
+
+  ENDMETHOD.
+ENDCLASS.
+
+
+
+
+-----------------------
+*&---------------------------------------------------------------------*
+*& Include          ZMM_PRPO_LEADTIME_SEL
+*&---------------------------------------------------------------------*
+TABLES: eban, ekko, ekpo, t001w.
+
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
+
+  SELECT-OPTIONS: s_ekorg FOR ekko-ekorg," Purchasing Organization
+                  s_badat FOR eban-badat,    " PR Request Date
+                  s_aedat FOR ekko-aedat,    " PO Creation Date
+                  s_werks FOR t001w-werks,   " Plant Code
+                  s_ekgrp FOR ekko-ekgrp,    " Purchasing Group
+                  s_banfn FOR eban-banfn,    " PR Number
+                  s_ebeln FOR ekko-ebeln.    " PO Number
+
+SELECTION-SCREEN END OF BLOCK b1.
+
+
+----------------------------
+*&---------------------------------------------------------------------*
+*& Include          ZMM_PRPO_LEADTIME_F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form Fetch_data
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM fetch_data .
+  CLEAR gt_final[].
+
+* helper table with the correct type (Character 90) for OBJECTID
+  TYPES: BEGIN OF ty_master_objectid ,
+           objectid TYPE cdobjectv,
+           banfn    TYPE banfn,
+           bnfpo    TYPE bnfpo,
+         END OF ty_master_objectid .
+
+  DATA: lt_master_objectid TYPE STANDARD TABLE OF ty_master_objectid .
+
+  TYPES: BEGIN OF ty_master_poobjectid ,
+           objectid TYPE cdobjectv,
+           ebeln    TYPE banfn,
+           ebelp    TYPE bnfpo,
+         END OF ty_master_poobjectid .
+
+  DATA: lt_master_poobjectid TYPE STANDARD TABLE OF ty_master_poobjectid .
+
+  TYPES: BEGIN OF ty_nast_helper,
+           objky TYPE nast-objky,
+           ebeln TYPE ekko-ebeln,
+         END OF ty_nast_helper.
+  DATA: lt_nast_helper TYPE STANDARD TABLE OF ty_nast_helper.
+
+  TYPES: BEGIN OF ty_user_name,
+           bname     TYPE usr21-bname,
+           name_text TYPE adrp-name_text,
+         END OF ty_user_name.
+  DATA: lt_user_names TYPE HASHED TABLE OF ty_user_name WITH UNIQUE KEY bname.
+
+  DATA : lv_pr_rel_date    TYPE eban-badat,
+         lv_po_lrel_date   TYPE cddatum,
+         lv_approval_count TYPE i,
+         lv_deleted        TYPE char1.
+
+  TYPES: lfa1_lifnr_ttab TYPE STANDARD TABLE OF lifnr WITH EMPTY KEY.
+
+
+* Data Selection
+  SELECT
+      e~banfn, e~bnfpo, e~loekz AS pr_loekz, e~knttp, e~txz01, e~werks, e~dispo,
+      e~ekgrp, e~matkl, e~ernam, e~badat, e~lfdat, e~lifnr, e~ekorg,
+      e~waers, e~menge, e~preis, e~banpr, e~rlwrt, e~statu,
+      e~frgzu, k~kostl,
+      p~ebeln, p~ebelp, p~loekz AS po_loekz,p~txz01 AS po_txz01 , p~werks AS po_werks ,
+      p~menge AS po_menge , p~netpr AS po_netpr, p~netwr AS po_netwr,
+      h~lifnr AS po_lifnr, h~waers AS po_waers, h~ernam AS po_ernam, h~aedat AS po_aedat, h~procstat AS po_procstat,
+      h~rlwrt AS po_total_val, h~frgzu AS po_frgzu
+    FROM eban AS e
+    LEFT OUTER JOIN ebkn AS k ON k~banfn = e~banfn AND k~bnfpo = e~bnfpo
+    LEFT OUTER JOIN ekpo AS p ON p~ebeln = e~ebeln AND p~ebelp = e~ebelp
+    LEFT OUTER JOIN ekko AS h ON h~ebeln = p~ebeln
+    WHERE e~banfn IN @s_banfn
+      AND e~badat IN @s_badat
+      AND e~werks IN @s_werks
+      AND e~ekgrp IN @s_ekgrp
+      AND e~ekorg IN @s_ekorg
+      AND e~ebeln IN @s_ebeln
+      AND h~aedat IN @s_aedat
+    INTO TABLE @DATA(gt_master_data).
+
+  IF sy-subrc IS INITIAL AND gt_master_data IS NOT INITIAL.
+*
+*   Authorization check for plants
+    DATA(lt_unique_prwerks) = VALUE werks_ttab( FOR ls IN gt_master_data ( ls-werks ) ).
+    SORT lt_unique_prwerks.
+    DELETE ADJACENT DUPLICATES FROM lt_unique_prwerks.
+
+    DATA(lt_unique_powerks) = VALUE werks_ttab( FOR ls IN gt_master_data
+                                                WHERE ( ebeln IS NOT INITIAL ) ( ls-po_werks ) ).
+    SORT lt_unique_powerks.
+    DELETE ADJACENT DUPLICATES FROM lt_unique_powerks.
+
+*   Validate PR Plants
+    CLEAR lv_deleted.
+    LOOP AT lt_unique_prwerks INTO DATA(lv_pr_werks).
+      AUTHORITY-CHECK OBJECT 'M_BANF_WRK'
+        ID 'ACTVT' FIELD '03'
+        ID 'WERKS' FIELD lv_pr_werks.
+      IF sy-subrc <> 0.
+        DELETE gt_master_data WHERE werks = lv_pr_werks.
+        lv_deleted = 'X'.
+      ENDIF.
+    ENDLOOP.
+*   Validate PO Plants
+    LOOP AT lt_unique_powerks INTO DATA(lv_po_werks).
+      AUTHORITY-CHECK OBJECT 'M_BEST_WRK'
+        ID 'ACTVT' FIELD '03'
+        ID 'WERKS' FIELD lv_po_werks.
+      IF sy-subrc <> 0.
+        DELETE gt_master_data WHERE po_werks = lv_po_werks.
+        lv_deleted = 'X'.
+      ENDIF.
+    ENDLOOP.
+*   IF all data is deleted
+    IF gt_master_data IS INITIAL.
+      MESSAGE TEXT-098 TYPE 'S' DISPLAY LIKE 'E'.
+      STOP.
+    ELSEIF lv_deleted = 'X'.
+      MESSAGE TEXT-097 TYPE 'S'.
+    ENDIF.
+
+
+* MRP Controller Names separately
+    SELECT werks, dispo, dsnam
+      FROM t024d
+      FOR ALL ENTRIES IN @gt_master_data
+      WHERE werks = @gt_master_data-werks
+        AND dispo = @gt_master_data-dispo
+      INTO TABLE @DATA(lt_t024d).
+    IF sy-subrc IS INITIAL.
+      SORT lt_t024d BY werks dispo.
+    ENDIF.
+
+*   Populate the helper table, moving the 10-char BANFN into the 90-char OBJECTID
+    lt_master_objectid = VALUE #( FOR ls_m IN gt_master_data (
+        objectid = ls_m-banfn
+        banfn    = ls_m-banfn
+        bnfpo    = ls_m-bnfpo ) ).
+
+*  using the helper table in FOR ALL ENTRIES
+*  PR change history data
+    SELECT h~objectid, h~username, h~udate, h~utime, p~tabkey, p~value_new
+      FROM cdpos AS p
+      INNER JOIN cdhdr AS h ON p~objectclas = h~objectclas
+                           AND p~objectid   = h~objectid
+                           AND p~changenr   = h~changenr
+      FOR ALL ENTRIES IN @lt_master_objectid
+      WHERE p~objectclas = 'BANF'
+        AND p~objectid   = @lt_master_objectid-objectid  " Now types match (CHAR 90)
+        AND p~fname      = 'FRGZU'
+        AND p~value_new  IN ('X', 'XX', 'XXX', 'XXXX', 'XXXXX', 'XXXXXX')
+      INTO TABLE @DATA(lt_all_prchanges).
+
+    IF sy-subrc IS INITIAL.
+      SORT lt_all_prchanges BY objectid  udate  utime ASCENDING.
+    ENDIF.
+
+    IF lt_all_prchanges IS NOT INITIAL.
+* Collect all unique usernames found in the change history
+      DATA(lt_users) = lt_all_prchanges.
+      SORT lt_users BY username.
+    ENDIF.
+
+* Collect all unique Vendor IDs from both PR and PO
+    DATA(lt_all_vendors) = VALUE lfa1_lifnr_ttab( FOR ls IN gt_master_data ( ls-lifnr )
+                                                                           ( ls-po_lifnr ) ).
+    SORT lt_all_vendors.
+    DELETE lt_all_vendors WHERE table_line IS INITIAL.
+    DELETE ADJACENT DUPLICATES FROM lt_all_vendors.
+*   select for all names
+    IF lt_all_vendors[] IS NOT INITIAL.
+      SELECT lifnr, name1
+        FROM lfa1
+        FOR ALL ENTRIES IN @lt_all_vendors
+        WHERE lifnr = @lt_all_vendors-table_line
+        INTO TABLE @DATA(lt_lfa1).
+      IF sy-subrc IS INITIAL.
+        SORT lt_lfa1 BY lifnr.
+      ENDIF.
+    ENDIF.
+*   PO Change history data
+    lt_master_poobjectid = VALUE #( FOR ls_po IN gt_master_data (
+        objectid = ls_po-ebeln
+        ebeln    = ls_po-ebeln
+        ebelp    = ls_po-ebelp ) ).
+    DELETE lt_master_poobjectid WHERE objectid IS INITIAL.
+
+    IF lt_master_poobjectid IS NOT INITIAL.
+      SELECT h~objectid, h~username, h~udate, h~utime, p~tabkey, p~value_new
+      FROM cdpos AS p
+      INNER JOIN cdhdr AS h ON p~objectclas = h~objectclas
+                           AND p~objectid   = h~objectid
+                           AND p~changenr   = h~changenr
+      FOR ALL ENTRIES IN @lt_master_poobjectid
+      WHERE p~objectclas = 'EINKBELEG'
+        AND p~objectid   = @lt_master_poobjectid-objectid  " Now types match (CHAR 90)
+        AND p~fname      = 'FRGZU'
+        AND p~value_new  IN ('X', 'XX', 'XXX', 'XXXX', 'XXXXX')
+      INTO TABLE @DATA(lt_all_pochanges).
+      IF sy-subrc IS INITIAL.
+        "  Sort results for processing
+        SORT lt_all_pochanges BY objectid  udate  utime ASCENDING.
+      ENDIF.
+    ENDIF.
+    IF lt_all_pochanges IS NOT INITIAL.
+*   Collect all unique usernames found in the change history
+      DATA(lt_pousers) = lt_all_pochanges.
+      SORT lt_pousers BY username.
+    ENDIF.
+*     Clubbing both PO and pr users
+    IF lt_pousers IS NOT INITIAL.
+      APPEND LINES OF lt_pousers TO lt_users.
+    ENDIF.
+
+*   Add PR Creators to the list for name lookup
+    LOOP AT gt_master_data INTO DATA(ls_collect).
+      IF ls_collect-ernam IS NOT INITIAL.
+        APPEND VALUE #( username = ls_collect-ernam ) TO lt_users.
+      ENDIF.
+      IF ls_collect-po_ernam IS NOT INITIAL.
+        APPEND VALUE #( username = ls_collect-po_ernam ) TO lt_users.
+      ENDIF.
+    ENDLOOP.
+
+    IF lt_users IS NOT INITIAL.
+      SORT lt_users BY username.
+      DELETE ADJACENT DUPLICATES FROM lt_users COMPARING username.
+
+      CLEAR lt_user_names[].
+
+      SELECT u~bname, a~name_text
+      FROM usr21 AS u
+      INNER JOIN adrp AS a ON u~persnumber = a~persnumber
+      FOR ALL ENTRIES IN @lt_users
+      WHERE u~bname = @lt_users-username
+      INTO TABLE @lt_user_names.
+      IF sy-subrc IS NOT INITIAL.
+        CLEAR lt_user_names.
+      ENDIF.
+    ENDIF.
+
+* Fetch PO Output/Sent Data
+
+    " Fill the helper table with the 10-char EBELN into the 30-char OBJKEY
+    lt_nast_helper = VALUE #( FOR ls_m3 IN gt_master_data (
+        objky = ls_m3-ebeln
+        ebeln  = ls_m3-ebeln ) ).
+
+    SORT lt_nast_helper BY objky.
+    DELETE lt_nast_helper WHERE objky IS INITIAL.
+    DELETE ADJACENT DUPLICATES FROM lt_nast_helper COMPARING objky.
+
+    IF lt_nast_helper IS NOT INITIAL.
+      SELECT objky, datvr, uhrvr
+        FROM nast
+        FOR ALL ENTRIES IN @lt_nast_helper
+        WHERE objky = @lt_nast_helper-objky
+          AND vstat  = '1'
+          AND aktiv  = ' '
+        INTO TABLE @DATA(lt_po_sent).
+
+      IF sy-subrc = 0.
+        " Sort by Date and Time ASCENDING to ensure the 'oldest' (earliest) is first
+        SORT lt_po_sent BY objky datvr uhrvr ASCENDING.
+      ENDIF.
+    ENDIF.
+  ELSE.
+    "Error if no data is present
+    MESSAGE TEXT-099 TYPE 'S' DISPLAY LIKE 'E'.
+    STOP.
+  ENDIF.
+
+*Sort Master Data by PR and Item
+  SORT gt_master_data BY banfn  bnfpo ASCENDING.
+  SORT lt_all_prchanges BY objectid  udate  utime ASCENDING.
+
+  LOOP AT gt_master_data INTO DATA(ls_master).
+    CLEAR gs_final.
+
+* PR Data Mapping
+    gs_final-banfn      = ls_master-banfn.
+    gs_final-bnfpo      = ls_master-bnfpo.
+    gs_final-pr_loekz   = ls_master-pr_loekz.
+    gs_final-knttp      = ls_master-knttp.
+    gs_final-txz01      = ls_master-txz01.
+    gs_final-werks      = ls_master-werks.
+    gs_final-dispo      = ls_master-dispo.
+    gs_final-kostl      = ls_master-kostl.   " From EBKN
+    gs_final-ekgrp      = ls_master-ekgrp.
+    gs_final-matkl      = ls_master-matkl.
+    gs_final-ernam      = ls_master-ernam.
+    gs_final-badat      = ls_master-badat.
+    gs_final-lfdat      = ls_master-lfdat.
+    gs_final-lifnr      = ls_master-lifnr.
+
+    " PR Creator Name l
+    DATA(ls_cre_pr) = VALUE #( lt_user_names[ bname = ls_master-ernam ] OPTIONAL ).
+    gs_final-pr_cre_name = ls_cre_pr-name_text.
+
+    DATA(ls_lfa1) = VALUE #( lt_lfa1[ lifnr = ls_master-lifnr ] OPTIONAL ).
+    gs_final-lifnr_pr_name = ls_lfa1-name1.
+
+    gs_final-waers      = ls_master-waers.
+    gs_final-menge      = ls_master-menge.
+    gs_final-preis      = ls_master-preis.
+    gs_final-rlwrt_pr   = ls_master-rlwrt.
+    gs_final-statu      = ls_master-statu.
+
+    DATA(ls_mrp) = VALUE #( lt_t024d[ werks = ls_master-werks
+                                      dispo = ls_master-dispo ] OPTIONAL ).
+
+    gs_final-dsnam      = ls_mrp-dsnam.
+
+    " Construct the expected TABKEY suffix (e.g., '00010')
+    DATA(lv_tabkey_pattern) = |{ sy-mandt }{ ls_master-banfn }{ ls_master-bnfpo }|.
+    CONDENSE lv_tabkey_pattern NO-GAPS.
+    " Optimized Loop: Start from last known index AND apply filter
+    LOOP AT lt_all_prchanges INTO DATA(ls_change)
+         WHERE objectid = ls_master-banfn
+           AND tabkey   = lv_tabkey_pattern.
+
+
+      " Find the user's full name
+      DATA(ls_user) = VALUE #( lt_user_names[ bname = ls_change-username ] OPTIONAL ).
+
+      CASE ls_change-value_new.
+        WHEN 'X'.      " 1st Approval
+          IF ls_master-frgzu CS 'X' AND gs_final-pr_rel_user1 IS INITIAL.
+            gs_final-pr_rel_user1 = ls_change-username.
+            gs_final-pr_rel_name1 = ls_user-name_text.
+            gs_final-pr_rel_date1 = ls_change-udate.
+            IF ls_change-utime IS NOT INITIAL AND ls_change-utime <> '000000'.
+              WRITE ls_change-utime TO gs_final-pr_rel_time1.
+            ELSE.
+              CLEAR gs_final-pr_rel_time1.
+            ENDIF.
+            IF ls_change-udate IS NOT INITIAL AND ls_master-badat IS NOT INITIAL.
+              DATA(lv_pr_d1) = ls_change-udate - ls_master-badat.
+              gs_final-pr_rel_days1 = |{ lv_pr_d1 SIGN = LEFT }|.
+            ELSE.
+              CLEAR gs_final-pr_rel_days1.
+            ENDIF.
+          ENDIF.
+
+        WHEN 'XX'.     " 2nd Approval
+          IF ls_master-frgzu CS 'XX' AND gs_final-pr_rel_user2 IS INITIAL.
+            gs_final-pr_rel_user2 = ls_change-username.
+            gs_final-pr_rel_name2 = ls_user-name_text.
+            gs_final-pr_rel_date2 = ls_change-udate.
+            IF ls_change-utime IS NOT INITIAL AND ls_change-utime <> '000000'.
+              WRITE ls_change-utime TO gs_final-pr_rel_time2.
+            ELSE.
+              CLEAR gs_final-pr_rel_time2.
+            ENDIF.
+            IF ls_change-udate IS NOT INITIAL AND gs_final-pr_rel_date1 IS NOT INITIAL.
+              DATA(lv_pr_d2) = ls_change-udate - gs_final-pr_rel_date1.
+              gs_final-pr_rel_days2 = |{ lv_pr_d2 SIGN = LEFT }|.
+            ELSE.
+              CLEAR gs_final-pr_rel_days2.
+            ENDIF.
+          ENDIF.
+
+        WHEN 'XXX'.    " 3rd Approval
+          IF ls_master-frgzu CS 'XXX' AND gs_final-pr_rel_user3 IS INITIAL.
+            gs_final-pr_rel_user3 = ls_change-username.
+            gs_final-pr_rel_name3 = ls_user-name_text.
+            gs_final-pr_rel_date3 = ls_change-udate.
+            IF ls_change-utime IS NOT INITIAL AND ls_change-utime <> '000000'.
+              WRITE ls_change-utime TO gs_final-pr_rel_time3.
+            ELSE.
+              CLEAR gs_final-pr_rel_time3.
+            ENDIF.
+            IF ls_change-udate IS NOT INITIAL AND gs_final-pr_rel_date2 IS NOT INITIAL.
+              DATA(lv_pr_d3) = ls_change-udate -  gs_final-pr_rel_date2.
+              gs_final-pr_rel_days3 = |{ lv_pr_d3 SIGN = LEFT }|.
+            ELSE.
+              CLEAR gs_final-pr_rel_days3.
+            ENDIF.
+          ENDIF.
+
+        WHEN 'XXXX'.   " 4th Approval
+          IF ls_master-frgzu CS 'XXXX' AND gs_final-pr_rel_user4 IS INITIAL.
+            gs_final-pr_rel_user4 = ls_change-username.
+            gs_final-pr_rel_name4 = ls_user-name_text.
+            gs_final-pr_rel_date4 = ls_change-udate.
+            IF ls_change-utime IS NOT INITIAL AND ls_change-utime <> '000000'.
+              WRITE ls_change-utime TO gs_final-pr_rel_time4.
+            ELSE.
+              CLEAR gs_final-pr_rel_time4.
+            ENDIF.
+            IF ls_change-udate IS NOT INITIAL AND gs_final-pr_rel_date3 IS NOT INITIAL.
+              DATA(lv_pr_d4) = ls_change-udate -  gs_final-pr_rel_date3.
+              gs_final-pr_rel_days4 = |{ lv_pr_d4 SIGN = LEFT }|.
+            ELSE.
+              CLEAR gs_final-pr_rel_days4.
+            ENDIF.
+          ENDIF.
+
+        WHEN 'XXXXX'.  " 5th Approval
+          IF ls_master-frgzu CS 'XXXXX' AND gs_final-pr_rel_user5 IS INITIAL.
+            gs_final-pr_rel_user5 = ls_change-username.
+            gs_final-pr_rel_name5 = ls_user-name_text.
+            gs_final-pr_rel_date5 = ls_change-udate.
+            IF ls_change-utime IS NOT INITIAL AND ls_change-utime <> '000000'.
+              WRITE ls_change-utime TO gs_final-pr_rel_time5.
+            ELSE.
+              CLEAR gs_final-pr_rel_time5.
+            ENDIF.
+            IF ls_change-udate IS NOT INITIAL AND gs_final-pr_rel_date4 IS NOT INITIAL.
+              DATA(lv_pr_d5) = ls_change-udate -  gs_final-pr_rel_date4.
+              gs_final-pr_rel_days5 = |{ lv_pr_d5 SIGN = LEFT }|.
+            ELSE.
+              CLEAR gs_final-pr_rel_days5.
+            ENDIF.
+          ENDIF.
+
+        WHEN 'XXXXXX'. " 6th Approval
+          IF ls_master-frgzu CS 'XXXXXX' AND gs_final-pr_rel_user6 IS INITIAL.
+            gs_final-pr_rel_user6 = ls_change-username.
+            gs_final-pr_rel_name6 = ls_user-name_text.
+            gs_final-pr_rel_date6 = ls_change-udate.
+            IF ls_change-utime IS NOT INITIAL AND ls_change-utime <> '000000'.
+              WRITE ls_change-utime TO gs_final-pr_rel_time6.
+            ELSE.
+              CLEAR gs_final-pr_rel_time6.
+            ENDIF.
+            IF ls_change-udate IS NOT INITIAL AND gs_final-pr_rel_date5 IS NOT INITIAL.
+              DATA(lv_pr_d6) = ls_change-udate -  gs_final-pr_rel_date5.
+              gs_final-pr_rel_days6 = |{ lv_pr_d6 SIGN = LEFT }|.
+            ELSE.
+              CLEAR gs_final-pr_rel_days6.
+            ENDIF.
+          ENDIF.
+      ENDCASE.
+
+    ENDLOOP.
+
+    CLEAR lv_pr_rel_date .
+*   When PR is completly released
+    IF ls_master-banpr ='05'.
+      IF gs_final-pr_rel_date6 IS NOT INITIAL.
+        lv_pr_rel_date  =  gs_final-pr_rel_date6.
+      ELSEIF gs_final-pr_rel_date5 IS NOT INITIAL.
+        lv_pr_rel_date  =  gs_final-pr_rel_date5.
+      ELSEIF  gs_final-pr_rel_date4 IS NOT INITIAL.
+        lv_pr_rel_date  =  gs_final-pr_rel_date4.
+      ELSEIF gs_final-pr_rel_date3 IS NOT INITIAL.
+        lv_pr_rel_date  =  gs_final-pr_rel_date3.
+      ELSEIF gs_final-pr_rel_date2 IS NOT INITIAL.
+        lv_pr_rel_date  =  gs_final-pr_rel_date2.
+      ELSEIF gs_final-pr_rel_date1 IS NOT INITIAL.
+        lv_pr_rel_date  =  gs_final-pr_rel_date1.
+      ENDIF.
+* Final PR release (in days)
+      IF lv_pr_rel_date =  ls_master-badat.
+        gs_final-final_pr_rel_days = 0.
+      ELSE .
+        IF lv_pr_rel_date IS NOT INITIAL AND gs_final-badat IS NOT INITIAL.
+          DATA(lv_final_days) = lv_pr_rel_date - gs_final-badat.
+          gs_final-final_pr_rel_days = |{ lv_final_days SIGN = LEFT }|.
+        ELSE.
+          CLEAR gs_final-final_pr_rel_days.
+        ENDIF.
+      ENDIF.
+    ENDIF.
+
+* PO Data Mapping
+    gs_final-ebeln          = ls_master-ebeln.
+    gs_final-ebelp          = ls_master-ebelp.
+    gs_final-po_loekz       = ls_master-po_loekz.
+    gs_final-lifnr_po       = ls_master-po_lifnr.
+    gs_final-txz01_po       = ls_master-po_txz01.
+    gs_final-waers_po       = ls_master-po_waers.
+    gs_final-menge_po       = ls_master-po_menge.
+    gs_final-netpr_po       = ls_master-po_netpr.
+    gs_final-netwr_po       = ls_master-po_netwr.
+    gs_final-rlwrt_po       = ls_master-po_total_val.
+    gs_final-ernam_po       = ls_master-po_ernam.
+    gs_final-aedat_po       = ls_master-po_aedat.
+
+* PO Creator Name
+    DATA(ls_cre_po) = VALUE #( lt_user_names[ bname = ls_master-po_ernam ] OPTIONAL ).
+    gs_final-po_cre_name = ls_cre_po-name_text.
+
+*  PO supplier name
+    DATA(ls_polfa1) = VALUE #( lt_lfa1[ lifnr = ls_master-po_lifnr ] OPTIONAL ).
+    gs_final-lifnr_po_name = ls_polfa1-name1.
+
+**          --- PO Release Information ---
+
+    CLEAR lv_approval_count.
+    LOOP AT lt_all_pochanges INTO DATA(ls_pochange)
+         WHERE objectid = ls_master-ebeln.
+
+      " Find the user's full name
+
+      DATA(ls_pouser) = VALUE #( lt_user_names[ bname = ls_pochange-username ] OPTIONAL ).
+
+      CASE ls_pochange-value_new.
+        WHEN 'X'.      " 1st Approval
+          IF ls_master-po_frgzu CS 'X' AND gs_final-po_rel_user1 IS INITIAL.
+            gs_final-po_rel_user1 = ls_pochange-username.
+            gs_final-po_rel_name1 = ls_pouser-name_text.
+            gs_final-po_rel_date1 = ls_pochange-udate.
+            IF ls_pochange-utime IS NOT INITIAL AND ls_pochange-utime <> '000000'.
+              WRITE ls_pochange-utime TO gs_final-po_rel_time1.
+            ELSE.
+              CLEAR gs_final-po_rel_time1.
+            ENDIF.
+            IF ls_pochange-udate IS NOT INITIAL AND ls_master-po_aedat IS NOT INITIAL.
+              DATA(lv_po_days1)  = ls_pochange-udate - ls_master-po_aedat.
+              gs_final-po_rel_days1 = |{ lv_po_days1 SIGN = LEFT }|.
+            ELSE.
+              CLEAR gs_final-po_rel_days1.
+            ENDIF.
+          ELSE.
+*            Set flag for Multiple re-approval of first step
+            lv_approval_count =  lv_approval_count + 1.
+          ENDIF.
+
+        WHEN 'XX'.     " 2nd Approval
+          IF ls_master-po_frgzu CS 'XX' AND gs_final-po_rel_user2 IS INITIAL.
+            gs_final-po_rel_user2 = ls_pochange-username.
+            gs_final-po_rel_name2 = ls_pouser-name_text.
+            gs_final-po_rel_date2 = ls_pochange-udate.
+            IF ls_pochange-utime IS NOT INITIAL AND ls_pochange-utime <> '000000'.
+              WRITE ls_pochange-utime TO gs_final-po_rel_time2.
+            ELSE.
+              CLEAR gs_final-po_rel_time2.
+            ENDIF.
+            IF ls_pochange-udate IS NOT INITIAL AND gs_final-po_rel_date1 IS NOT INITIAL.
+              DATA(lv_po_days2)  = ls_pochange-udate -  gs_final-po_rel_date1.
+              gs_final-po_rel_days2 = |{ lv_po_days2 SIGN = LEFT }|.
+            ELSE.
+              CLEAR gs_final-po_rel_days2.
+            ENDIF.
+          ELSE.
+*              flag
+          ENDIF.
+
+        WHEN 'XXX'.    " 3rd Approval
+          IF ls_master-po_frgzu CS 'XXX' AND gs_final-po_rel_user3 IS INITIAL.
+            gs_final-po_rel_user3 = ls_pochange-username.
+            gs_final-po_rel_name3 = ls_pouser-name_text.
+            gs_final-po_rel_date3 = ls_pochange-udate.
+            IF ls_pochange-utime IS NOT INITIAL AND ls_pochange-utime <> '000000'.
+              WRITE ls_pochange-utime TO gs_final-po_rel_time3.
+            ELSE.
+              CLEAR gs_final-po_rel_time3.
+            ENDIF.
+            IF ls_pochange-udate IS NOT INITIAL AND gs_final-po_rel_date2 IS NOT INITIAL.
+              DATA(lv_po_days3)  = ls_pochange-udate -  gs_final-po_rel_date2.
+              gs_final-po_rel_days3 = |{ lv_po_days3 SIGN = LEFT }|.
+            ELSE.
+              CLEAR gs_final-po_rel_days3.
+            ENDIF.
+          ELSE.
+*            flag
+          ENDIF.
+
+        WHEN 'XXXX'.   " 4th Approval
+          IF ls_master-po_frgzu CS 'XXXX' AND gs_final-po_rel_user4 IS INITIAL.
+            gs_final-po_rel_user4 = ls_pochange-username.
+            gs_final-po_rel_name4 = ls_pouser-name_text.
+            gs_final-po_rel_date4 = ls_pochange-udate.
+            IF ls_pochange-utime IS NOT INITIAL AND ls_pochange-utime <> '000000'.
+              WRITE ls_pochange-utime TO gs_final-po_rel_time4.
+            ELSE.
+              CLEAR gs_final-po_rel_time4.
+            ENDIF.
+            IF ls_pochange-udate IS NOT INITIAL AND gs_final-po_rel_date3 IS NOT INITIAL.
+              DATA(lv_po_days4)  = ls_pochange-udate -  gs_final-po_rel_date3.
+              gs_final-po_rel_days4 = |{ lv_po_days4 SIGN = LEFT }|.
+            ELSE.
+              CLEAR gs_final-po_rel_days4.
+            ENDIF.
+          ENDIF.
+
+        WHEN 'XXXXX'.  " 5th Approval
+          IF ls_master-po_frgzu CS 'XXXXX' AND gs_final-po_rel_user5 IS INITIAL.
+            gs_final-po_rel_user5 = ls_pochange-username.
+            gs_final-po_rel_name5 = ls_pouser-name_text.
+            gs_final-po_rel_date5 = ls_pochange-udate.
+            IF ls_pochange-utime IS NOT INITIAL AND ls_pochange-utime <> '000000'.
+              WRITE ls_pochange-utime TO gs_final-po_rel_time5.
+            ELSE.
+              CLEAR gs_final-po_rel_time5.
+            ENDIF.
+            IF ls_pochange-udate IS NOT INITIAL AND gs_final-po_rel_date4 IS NOT INITIAL.
+              DATA(lv_po_days5)  = ls_pochange-udate -  gs_final-po_rel_date4.
+              gs_final-po_rel_days5 = |{ lv_po_days5 SIGN = LEFT }|.
+            ELSE.
+              CLEAR gs_final-po_rel_days5.
+            ENDIF.
+          ENDIF.
+
+      ENDCASE.
+    ENDLOOP.
+
+    " Multiple  re Approvals (Flag)
+    IF lv_approval_count GE 1.
+      gs_final-multi_approval = 'Yes'.
+    ELSE.
+      gs_final-multi_approval = 'No'.
+    ENDIF.
+* PO Output/Sent Data
+    READ TABLE lt_po_sent INTO DATA(ls_sent)
+         WITH KEY objky = ls_master-ebeln
+         BINARY SEARCH. " will return the first match it finds in the sorted sequence (oldest record).
+    IF sy-subrc IS INITIAL.
+
+      gs_final-po_sent_date =  ls_sent-datvr.
+      IF ls_sent-uhrvr IS NOT INITIAL AND ls_sent-uhrvr <> '000000'.
+        WRITE ls_sent-uhrvr TO gs_final-po_sent_time.
+      ELSE.
+        CLEAR gs_final-po_sent_time.
+      ENDIF.
+
+*    " --- Calculated Lead Times ---
+      IF gs_final-po_sent_date IS NOT INITIAL AND gs_final-badat IS NOT INITIAL.
+        DATA(lv_leadtime_days)  = gs_final-po_sent_date - gs_final-badat.
+        gs_final-pr_po_leadtime  = |{ lv_leadtime_days SIGN = LEFT }|.           " PR-PO Leadtime
+      ELSE.
+        CLEAR gs_final-pr_po_leadtime.
+      ENDIF.
+
+      IF gs_final-po_sent_date IS NOT INITIAL AND lv_pr_rel_date IS NOT INITIAL.
+        DATA(lv_approval_days) =  gs_final-po_sent_date -  lv_pr_rel_date.
+        gs_final-po_approval_days  = |{ lv_approval_days SIGN = LEFT }|.   " PO approval (days)
+      ELSE.
+        CLEAR gs_final-po_approval_days.
+      ENDIF.
+
+      IF gs_final-aedat_po IS NOT INITIAL AND lv_pr_rel_date IS NOT INITIAL.
+        DATA(lv_creation_days) = gs_final-aedat_po -  lv_pr_rel_date.
+        gs_final-po_creation_days   = |{ lv_creation_days SIGN = LEFT }|.    " PO creation (days)
+      ELSE.
+        CLEAR gs_final-po_creation_days.
+      ENDIF.
+
+      IF ls_master-po_procstat = '05'. "when PO is completely released
+*      finding PO Last Release Date from step 5 to step1
+
+        IF gs_final-po_rel_date5 IS NOT INITIAL.
+          lv_po_lrel_date  =   gs_final-po_rel_date5.
+        ELSEIF gs_final-po_rel_date4 IS NOT INITIAL.
+          lv_po_lrel_date  =   gs_final-po_rel_date4.
+        ELSEIF gs_final-po_rel_date3 IS NOT INITIAL.
+          lv_po_lrel_date  =   gs_final-po_rel_date3.
+        ELSEIF gs_final-po_rel_date2 IS NOT INITIAL.
+          lv_po_lrel_date  =   gs_final-po_rel_date2.
+        ELSEIF gs_final-po_rel_date1 IS NOT INITIAL.
+          lv_po_lrel_date  =   gs_final-po_rel_date1.
+        ENDIF.
+
+        IF  lv_po_lrel_date  IS NOT INITIAL AND gs_final-po_sent_date IS NOT INITIAL.
+          DATA(lv_sent_days) = gs_final-po_sent_date - lv_po_lrel_date.
+          gs_final-po_sent_days   = |{ lv_sent_days SIGN = LEFT }|.        " PO sent (in days)
+        ELSE.
+          CLEAR gs_final-po_sent_days.
+        ENDIF.
+      ENDIF.
+
+    ENDIF.
+
+    APPEND gs_final TO gt_final.
+
+  ENDLOOP.
+
+  IF gt_final[] IS INITIAL.
+    "Error if no data is present
+    MESSAGE TEXT-099 TYPE 'E' .
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form Display_data
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+
+FORM display_data .
+  DATA: lo_events  TYPE REF TO cl_salv_events_table,
+        lo_handler TYPE REF TO lcl_event_handler.
+  DATA: lo_err TYPE REF TO cx_salv_not_found.
+  DATA: lo_err_not_found TYPE REF TO cx_salv_not_found,
+        lo_err_msg       TYPE REF TO cx_salv_msg.
+
+  TRY.
+      CALL METHOD cl_salv_table=>factory
+        IMPORTING
+          r_salv_table = gr_alv
+        CHANGING
+          t_table      = gt_final.
+    CATCH cx_salv_not_found INTO lo_err_not_found.
+      MESSAGE TEXT-096 TYPE 'E' .
+    CATCH cx_salv_msg INTO lo_err_msg.
+      MESSAGE TEXT-096 TYPE 'E' .
+  ENDTRY.
+
+
+** To Display the Sort, Filter Export, Etc,. options
+  gr_functions = gr_alv->get_functions( ).
+  gr_functions->set_all( abap_true ).
+
+  gr_display = gr_alv->get_display_settings( ). "Display Settings
+
+  " Heading for the ALV
+
+*   Zebra pattern
+  gr_display->set_striped_pattern( abap_true ). " To set the striped Pattern
+
+*  Layout changes
+  gr_columns = gr_alv->get_columns( ).
+
+  PERFORM change_column_name.
+
+  " Set PR Column as Hotspot
+  TRY.
+      lr_column = gr_columns->get_column( 'BANFN' ).
+      DATA(lr_col_pr) = CAST cl_salv_column_table( lr_column ).
+      lr_col_pr->set_cell_type( if_salv_c_cell_type=>hotspot ).
+    CATCH cx_salv_not_found INTO lo_err.
+      MESSAGE TEXT-096 TYPE 'E' .
+  ENDTRY.
+
+  " Set PO Column as Hotspot
+  TRY.
+      lr_column = gr_columns->get_column( 'EBELN' ).
+      DATA(lr_col_po) = CAST cl_salv_column_table( lr_column ).
+      lr_col_po->set_cell_type( if_salv_c_cell_type=>hotspot ).
+    CATCH cx_salv_not_found INTO lo_err.
+      MESSAGE TEXT-096 TYPE 'E' .
+  ENDTRY.
+
+  " Register the Click Event
+  lo_events = gr_alv->get_event( ).
+  CREATE OBJECT lo_handler.
+  SET HANDLER lo_handler->on_link_click FOR lo_events.
+
+  gr_columns->set_optimize( 'X' ).
+  gr_sorts = gr_alv->get_sorts( ).
+  gr_agg = gr_alv->get_aggregations( ).
+  gr_layout =  gr_alv->get_layout( ).
+
+*  Saving Layouts.
+  gv_key-report = sy-repid.
+  gr_layout->set_key( gv_key ).
+  gr_layout->set_save_restriction( cl_salv_layout=>restrict_none ).
+
+*  Setting layout screen from Selection screen.
+  gr_layout->set_initial_layout( value = set_lay  ).
+  gr_alv->display( ).
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form change_column_name
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM change_column_name .
+  DATA: lx_root TYPE REF TO cx_salv_not_found,
+        lo_err  TYPE REF TO cx_salv_not_found,
+        lv_text TYPE string.
+
+  " --- PR Release 1 ---
+  TRY.
+      lr_column = gr_columns->get_column( 'PR_REL_USER1' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '1st PR Release User' ).
+      lr_column = gr_columns->get_column( 'PR_REL_NAME1' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '1st PR Release Name' ).
+      lr_column = gr_columns->get_column( 'PR_REL_DATE1' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '1st PR Release Date' ).
+      lr_column = gr_columns->get_column( 'PR_REL_TIME1' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '1st PR Release Time' ).
+      lr_column = gr_columns->get_column( 'PR_REL_DAYS1' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '1st PR Release (in days)' ).
+    CATCH cx_salv_not_found INTO lo_err.
+      MESSAGE TEXT-096 TYPE 'E' .
+  ENDTRY.
+
+  " --- PR Release 2 ---
+  TRY.
+      lr_column = gr_columns->get_column( 'PR_REL_USER2' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '2nd PR Release User' ).
+      lr_column = gr_columns->get_column( 'PR_REL_NAME2' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '2nd PR Release Name' ).
+      lr_column = gr_columns->get_column( 'PR_REL_DATE2' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '2nd PR Release Date' ).
+      lr_column = gr_columns->get_column( 'PR_REL_TIME2' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '2nd PR Release Time' ).
+      lr_column = gr_columns->get_column( 'PR_REL_DAYS2' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '2nd PR Release (in days)' ).
+    CATCH cx_salv_not_found INTO lo_err.
+      MESSAGE TEXT-096 TYPE 'E' .
+  ENDTRY.
+
+  " --- PR Release 3 ---
+  TRY.
+      lr_column = gr_columns->get_column( 'PR_REL_USER3' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '3rd PR Release User' ).
+      lr_column = gr_columns->get_column( 'PR_REL_NAME3' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '3rd PR Release Name' ).
+      lr_column = gr_columns->get_column( 'PR_REL_DATE3' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '3rd PR Release Date' ).
+      lr_column = gr_columns->get_column( 'PR_REL_TIME3' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '3rd PR Release Time' ).
+      lr_column = gr_columns->get_column( 'PR_REL_DAYS3' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '3rd PR Release (in days)' ).
+    CATCH cx_salv_not_found INTO lo_err.
+      MESSAGE TEXT-096 TYPE 'E' .
+  ENDTRY.
+
+  " --- PR Release 4 ---
+  TRY.
+      lr_column = gr_columns->get_column( 'PR_REL_USER4' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '4th PR Release User' ).
+      lr_column = gr_columns->get_column( 'PR_REL_NAME4' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '4th PR Release Name' ).
+      lr_column = gr_columns->get_column( 'PR_REL_DATE4' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '4th PR Release Date' ).
+      lr_column = gr_columns->get_column( 'PR_REL_TIME4' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '4th PR Release Time' ).
+      lr_column = gr_columns->get_column( 'PR_REL_DAYS4' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '4th PR Release (in days)' ).
+    CATCH cx_salv_not_found INTO lo_err.
+      MESSAGE TEXT-096 TYPE 'E' .
+  ENDTRY.
+
+  " --- PR Release 5 ---
+  TRY.
+      lr_column = gr_columns->get_column( 'PR_REL_USER5' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '5th PR Release User' ).
+      lr_column = gr_columns->get_column( 'PR_REL_NAME5' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '5th PR Release Name' ).
+      lr_column = gr_columns->get_column( 'PR_REL_DATE5' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '5th PR Release Date' ).
+      lr_column = gr_columns->get_column( 'PR_REL_TIME5' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '5th PR Release Time' ).
+      lr_column = gr_columns->get_column( 'PR_REL_DAYS5' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '5th PR Release (in days)' ).
+    CATCH cx_salv_not_found INTO lo_err.
+      MESSAGE TEXT-096 TYPE 'E' .
+  ENDTRY.
+
+  " --- PR Release 6 ---
+  TRY.
+      lr_column = gr_columns->get_column( 'PR_REL_USER6' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '6th PR Release User' ).
+      lr_column = gr_columns->get_column( 'PR_REL_NAME6' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '6th PR Release Name' ).
+      lr_column = gr_columns->get_column( 'PR_REL_DATE6' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '6th PR Release Date' ).
+      lr_column = gr_columns->get_column( 'PR_REL_TIME6' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '6th PR Release Time' ).
+      lr_column = gr_columns->get_column( 'PR_REL_DAYS6' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '6th PR Release (in days)' ).
+    CATCH cx_salv_not_found INTO lo_err.
+      MESSAGE TEXT-096 TYPE 'E' .
+  ENDTRY.
+
+  " --- PO Release 1 ---
+  TRY.
+      lr_column = gr_columns->get_column( 'PO_REL_USER1' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '1st PO Release User' ).
+      lr_column = gr_columns->get_column( 'PO_REL_NAME1' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '1st PO Release Name' ).
+      lr_column = gr_columns->get_column( 'PO_REL_DATE1' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '1st PO Release Date' ).
+      lr_column = gr_columns->get_column( 'PO_REL_TIME1' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '1st PO Release Time' ).
+      lr_column = gr_columns->get_column( 'PO_REL_DAYS1' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '1st PO Release (in days)' ).
+    CATCH cx_salv_not_found INTO lo_err.
+      MESSAGE TEXT-096 TYPE 'E' .
+  ENDTRY.
+
+  " --- PO Release 2 ---
+  TRY.
+      lr_column = gr_columns->get_column( 'PO_REL_USER2' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '2nd PO Release User' ).
+      lr_column = gr_columns->get_column( 'PO_REL_NAME2' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '2nd PO Release Name' ).
+      lr_column = gr_columns->get_column( 'PO_REL_DATE2' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '2nd PO Release Date' ).
+      lr_column = gr_columns->get_column( 'PO_REL_TIME2' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '2nd PO Release Time' ).
+      lr_column = gr_columns->get_column( 'PO_REL_DAYS2' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '2nd PO Release (in days)' ).
+    CATCH cx_salv_not_found INTO lo_err.
+      MESSAGE TEXT-096 TYPE 'E' .
+  ENDTRY.
+
+  " --- PO Release 3 ---
+  TRY.
+      lr_column = gr_columns->get_column( 'PO_REL_USER3' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '3rd PO Release User' ).
+      lr_column = gr_columns->get_column( 'PO_REL_NAME3' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '3rd PO Release Name' ).
+      lr_column = gr_columns->get_column( 'PO_REL_DATE3' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '3rd PO Release Date' ).
+      lr_column = gr_columns->get_column( 'PO_REL_TIME3' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '3rd PO Release Time' ).
+      lr_column = gr_columns->get_column( 'PO_REL_DAYS3' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '3rd PO Release (in days)' ).
+    CATCH cx_salv_not_found INTO lo_err.
+      MESSAGE TEXT-096 TYPE 'E' .
+  ENDTRY.
+
+  " --- PO Release 4 ---
+  TRY.
+      lr_column = gr_columns->get_column( 'PO_REL_USER4' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '4th PO Release User' ).
+      lr_column = gr_columns->get_column( 'PO_REL_NAME4' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '4th PO Release Name' ).
+      lr_column = gr_columns->get_column( 'PO_REL_DATE4' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '4th PO Release Date' ).
+      lr_column = gr_columns->get_column( 'PO_REL_TIME4' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '4th PO Release Time' ).
+      lr_column = gr_columns->get_column( 'PO_REL_DAYS4' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '4th PO Release (in days)' ).
+    CATCH cx_salv_not_found INTO lo_err.
+      MESSAGE TEXT-096 TYPE 'E' .
+  ENDTRY.
+
+  " --- PO Release 5 ---
+  TRY.
+      lr_column = gr_columns->get_column( 'PO_REL_USER5' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '5th PO Release User' ).
+      lr_column = gr_columns->get_column( 'PO_REL_NAME5' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '5th PO Release Name' ).
+      lr_column = gr_columns->get_column( 'PO_REL_DATE5' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '5th PO Release Date' ).
+      lr_column = gr_columns->get_column( 'PO_REL_TIME5' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '5th PO Release Time' ).
+      lr_column = gr_columns->get_column( 'PO_REL_DAYS5' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( '5th PO Release (in days)' ).
+    CATCH cx_salv_not_found INTO lo_err.
+      MESSAGE TEXT-096 TYPE 'E' .
+  ENDTRY.
+
+  TRY.
+      " PR-PO Leadtime
+      lr_column = gr_columns->get_column( 'PR_PO_LEADTIME' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( 'PR to PO Lead Time (Days)' ).
+
+      " Final PR Release Days
+      lr_column = gr_columns->get_column( 'FINAL_PR_REL_DAYS' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( 'Final PR Release(in days)' ).
+
+      " PO Creation Days
+      lr_column = gr_columns->get_column( 'PO_CREATION_DAYS' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( 'PO creation(Days)' ).
+    CATCH cx_salv_not_found INTO lo_err.
+      MESSAGE TEXT-096 TYPE 'E' .
+  ENDTRY.
+
+  TRY.
+      " PO Sent Date
+      lr_column = gr_columns->get_column( 'PO_SENT_DATE' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( 'PO Sent Date' ).
+      " PO Sent Time
+      lr_column = gr_columns->get_column( 'PO_SENT_TIME' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( 'PO Sent Time' ).
+      lr_column = gr_columns->get_column( 'PO_APPROVAL_DAYS' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( 'PO approval(Days)' ).
+
+      " PO Sent Days
+      lr_column = gr_columns->get_column( 'PO_SENT_DAYS' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( 'PO sent (in days)' ).
+
+      " Multi-Approval Flag
+      lr_column = gr_columns->get_column( 'MULTI_APPROVAL' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( 'Multiple Approvals' ).
+    CATCH cx_salv_not_found INTO lo_err.
+      MESSAGE TEXT-096 TYPE 'E' .
+  ENDTRY.
+
+  TRY.
+      " PR Total Value
+      lr_column = gr_columns->get_column( 'RLWRT_PR' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( 'Total PR Value' ).
+
+      " PO Total Value
+      lr_column = gr_columns->get_column( 'RLWRT_PO' ).
+      lr_column->set_short_text( ' ' ). lr_column->set_medium_text( ' ' ).
+      lr_column->set_long_text( 'Total PO Value' ).
+
+    CATCH cx_salv_not_found INTO lo_err.
+      MESSAGE TEXT-096 TYPE 'E' .
+  ENDTRY.
+ENDFORM.
+
